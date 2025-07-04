@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Your Basket - Food Express</title>
+  <style>
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background: url('https://images.unsplash.com/photo-1600891964599-f61ba0e24092?auto=format&fit=crop&w=1400&q=80') no-repeat center center fixed;
+      background-size: cover;
+      margin: 0;
+      padding: 40px 20px;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #fffbd6;
+      text-shadow: 1px 1px 4px #000;
+    }
+
+    .cart-container {
+      max-width: 600px;
+      margin: auto;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      padding: 20px;
+    }
+
+    .cart-item {
+      border-bottom: 1px solid #eee;
+      padding: 10px 0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 16px;
+    }
+
+    .totals {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+
+    .totals p {
+      margin: 8px 0;
+    }
+
+    .total-price {
+      font-weight: bold;
+      font-size: 20px;
+      color: green;
+    }
+
+    .btn {
+      margin-top: 20px;
+      background: darkgreen;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .btn:hover {
+      background: green;
+    }
+
+    .back {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: #fffbd6;
+      text-decoration: none;
+      font-weight: bold;
+      text-shadow: 1px 1px 3px #000;
+    }
+
+    .back:hover {
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Your Basket 🧺</h1>
+
+  <div class="cart-container" id="cartContainer">
+    <!-- Items and totals will be inserted here by JavaScript -->
+  </div>
+
+  <a href="home.html" class="back">← Back to Menu</a>
+
+  <script>
+    const GST = 40;
+    const SERVICE_TAX = 20;
+    const DELIVERY = 50;
+
+    const container = document.getElementById('cartContainer');
+
+    // ✅ Get cart from server session
+    fetch('/get-cart')
+      .then(res => res.json())
+      .then(cart => {
+        if (cart.length === 0) {
+          container.innerHTML = "<p style='text-align:center;'>No items in your basket.</p>";
+        } else {
+          let subtotal = 0;
+          let itemsHTML = '';
+
+          cart.forEach((item, index) => {
+            subtotal += item.price;
+            itemsHTML += `
+              <div class="cart-item">
+                <span>${index + 1}. ${item.name}</span>
+                <span>₹${item.price}</span>
+              </div>
+            `;
+          });
+
+          const total = subtotal + GST + SERVICE_TAX + DELIVERY;
+
+          container.innerHTML = `
+            ${itemsHTML}
+            <div class="totals">
+              <p>Subtotal: ₹${subtotal}</p>
+              <p>GST: ₹${GST}</p>
+              <p>Service Tax: ₹${SERVICE_TAX}</p>
+              <p>Delivery Fee: ₹${DELIVERY}</p>
+              <p class="total-price">Total: ₹${total}</p>
+            </div>
+            <button class="btn" onclick="placeOrder()">Place Order</button>
+          `;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        container.innerHTML = "<p style='text-align:center;'>Error loading basket.</p>";
+      });
+
+    function placeOrder() {
+      // ✅ Get user info from server session
+      fetch('/userdata')
+        .then(res => res.json())
+        .then(user => {
+          const name = user.name || 'Guest';
+          const place = user.place || 'Unknown';
+
+          // ✅ Get cart again
+          fetch('/get-cart')
+            .then(res => res.json())
+            .then(cart => {
+              if (cart.length === 0) {
+                alert("Your basket is empty!");
+                return;
+              }
+
+              fetch('/place-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, place, items: cart })
+              })
+              .then(res => res.json())
+              .then(data => {
+                alert("🎉 " + data.message + `\nOrder ID: ${data.orderId}`);
+                window.location.href = 'track.html';
+              })
+              .catch(error => {
+                console.error("Order failed:", error);
+                alert("❌ Failed to place order. Try again.");
+              });
+
+            });
+        });
+    }
+  </script>
+
+</body>
+</html>

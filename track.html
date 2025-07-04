@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Track Your Order - Food Express</title>
+  <style>
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background: url('https://png.pngtree.com/background/20230528/original/pngtree-an-arrangement-of-various-indian-food-picture-image_2778221.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: #fefae0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #fffdd0; /* Light cream */
+      text-shadow: 1px 1px 2px #000;
+    }
+
+    .stage {
+      font-size: 18px;
+      margin: 15px 0;
+      padding: 10px;
+      border-radius: 10px;
+      max-width: 400px;
+      margin-inline: auto;
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+      transition: all 0.4s;
+    }
+
+    .active {
+      background: #ffeaa7;
+      font-weight: bold;
+      transform: scale(1.03);
+    }
+
+    .completed {
+      background: #a0e7a0;
+      text-decoration: line-through;
+    }
+
+    .scooter {
+      font-size: 40px;
+      margin: 20px 0;
+      animation: move 2s infinite alternate;
+    }
+
+    @keyframes move {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(20px); }
+    }
+
+    #eta {
+      font-size: 16px;
+      color: #fffdd0;
+      margin-top: 10px;
+      text-shadow: 1px 1px 2px #000;
+    }
+
+    .btn {
+      margin-top: 30px;
+      background: darkgreen;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: green;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📦 Track Your Order</h1>
+  <div class="scooter">🛵</div>
+  <p id="eta">Estimated Arrival: 10 minutes</p>
+
+  <div id="statusContainer">
+    <div class="stage">Order Received</div>
+    <div class="stage">Preparing Your Food</div>
+    <div class="stage">Out for Delivery</div>
+    <div class="stage">Delivered</div>
+  </div>
+
+  <button class="btn" onclick="goHome()">Back to Home</button>
+
+  <script>
+    const stages = document.querySelectorAll('.stage');
+    const etaText = document.getElementById('eta');
+    let currentStage = 0;
+    let etaMinutes = 10;
+
+    function updateStage() {
+      stages.forEach((el, i) => {
+        el.classList.remove('completed', 'active');
+        if (i < currentStage) el.classList.add('completed');
+        else if (i === currentStage) el.classList.add('active');
+      });
+
+      if (currentStage < stages.length - 1) {
+        currentStage++;
+        setTimeout(updateStage, 2500);
+      } else {
+        etaText.textContent = "Your food has been delivered! 🎉";
+      }
+    }
+
+    function countdownETA() {
+      const interval = setInterval(() => {
+        etaMinutes--;
+        if (etaMinutes > 0) {
+          etaText.textContent = `Estimated Arrival: ${etaMinutes} minute${etaMinutes > 1 ? 's' : ''}`;
+        } else {
+          clearInterval(interval);
+        }
+      }, 60000); // update every 1 min
+    }
+
+    function goHome() {
+      window.location.href = 'home.html';
+    }
+
+    // Start tracking and countdown on page load
+    updateStage();
+    countdownETA();
+  </script>
+</body>
+</html>
