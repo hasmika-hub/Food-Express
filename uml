@@ -1,0 +1,54 @@
+from PIL import Image, ImageDraw
+
+# Create blank image
+img = Image.new("RGB", (1400, 800), "white")
+draw = ImageDraw.Draw(img)
+
+# Draw system boundary
+system_box = (400, 100, 1000, 700)
+draw.rectangle(system_box, outline="black", width=2)
+draw.text((600, 110), "Online Vending Machine System", fill="black")
+
+# Actors
+draw.ellipse((100, 250, 180, 330), outline="black", width=2)
+draw.text((100, 340), "Customer", fill="black")
+
+draw.ellipse((1200, 250, 1280, 330), outline="black", width=2)
+draw.text((1180, 340), "Admin", fill="black")
+
+draw.ellipse((100, 550, 180, 630), outline="black", width=2)
+draw.text((80, 640), "Payment\nGateway", fill="black")
+
+# Use cases inside system
+use_cases = [
+    ("Register / Login", 550, 180),
+    ("Browse Digital Items", 550, 250),
+    ("Select Item", 550, 320),
+    ("Make Payment", 550, 390),
+    ("Download Item", 550, 460),
+    ("Manage Account", 550, 530),
+    ("Manage Inventory", 750, 250),
+    ("View Reports", 750, 320),
+]
+
+for text, x, y in use_cases:
+    draw.ellipse((x - 80, y - 25, x + 120, y + 25), outline="black", width=2)
+    draw.text((x - 60, y - 10), text, fill="black")
+
+# Lines (connections)
+lines = [
+    ((180, 290), (470, 250)),  # customer -> browse
+    ((180, 290), (470, 320)),  # customer -> select
+    ((180, 290), (470, 180)),  # customer -> login
+    ((180, 290), (470, 530)),  # customer -> manage account
+    ((180, 590), (470, 390)),  # payment -> make payment
+    ((1180, 290), (870, 250)),  # admin -> manage inventory
+    ((1180, 290), (870, 320)),  # admin -> view reports
+]
+
+for start, end in lines:
+    draw.line([start, end], fill="black", width=2)
+
+# Show or save the image
+img.show()
+img.save("use_case_diagram_online_vending_machine.png")

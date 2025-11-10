@@ -106,6 +106,7 @@
       margin-top: 40px;
       display: flex;
       justify-content: center;
+      width: 100%;
     }
     .add-btn {
       background-color: #ffcccb;
@@ -138,6 +139,7 @@
       padding: 12px;
       font-size: 16px;
       cursor: pointer;
+      border: none;
     }
     body.dark-mode {
       background: #1e1e1e;
@@ -150,11 +152,16 @@
       background-color: #666;
       color: #fff;
     }
+    /* responsive */
+    @media (max-width: 600px) {
+      .flip-card { width: 90%; }
+      body { padding: 20px 10px; }
+    }
   </style>
 </head>
 <body>
-  <button id="themeToggle" class="theme-toggle"><i class="fas fa-moon"></i></button>
-  <h1>Welcome to Food Express 🍽️</h1>
+  <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme"><i class="fas fa-moon"></i></button>
+  <h1>Welcome to Food Express 🍽</h1>
   <h2 id="greeting">Hello Guest! 👋</h2>
   <h3 id="location">Delivering to your location 📍</h3>
   <div class="filters">
@@ -167,9 +174,12 @@
     </select>
   </div>
   <div class="menu" id="menuItems"></div>
-  <a href="cart.html" class="view-cart">🧺 View Basket</a>
-  <a href="track.html" class="view-cart" style="background:#444;">🚚 Track Order</a>
-  <a href="admin.html" class="view-cart" style="background:#222;">🔐 Admin Dashboard</a>
+  <div style="text-align:center; margin-top:10px;">
+    <a href="cart.html" class="view-cart">🧺 View Basket</a>
+    <a href="track.html" class="view-cart" style="background:#444; margin-left:8px;">🚚 Track Order</a>
+    <a href="admin.html" class="view-cart" style="background:#222; margin-left:8px;">🔐 Admin Dashboard</a>
+  </div>
+
   <script>
     const items = [
       {
@@ -237,32 +247,48 @@
         funFact: "The sizzling brownie trend began in India!"
       }
     ];
+
+    // Render items; use index for add-to-cart button to avoid JSON escaping issues
     function displayItems(filteredItems) {
       const menuDiv = document.getElementById('menuItems');
       menuDiv.innerHTML = '';
-      filteredItems.forEach(item => {
+      filteredItems.forEach((item, idx) => {
         const card = document.createElement('div');
         card.className = 'flip-card';
+        // Use data-index so we also have it available for event delegation if needed
+        card.dataset.index = idx;
         card.innerHTML = `
           <div class="flip-card-inner">
             <div class="flip-card-front">
-              <img src="${item.image}" alt="${item.name}" />
-              <h3>${item.name} - ₹${item.price}</h3>
-              <p>${item.description}</p>
-              <p><strong>Ingredients:</strong> ${item.ingredients}</p>
+              <img src="${item.image}" alt="${escapeHtml(item.name)}" />
+              <h3>${escapeHtml(item.name)} - ₹${item.price}</h3>
+              <p>${escapeHtml(item.description)}</p>
+              <p><strong>Ingredients:</strong> ${escapeHtml(item.ingredients)}</p>
             </div>
             <div class="flip-card-back">
-              <p><strong>Origin:</strong> ${item.origin}</p>
-              <p><strong>Fun Fact:</strong> ${item.funFact}</p>
+              <p><strong>Origin:</strong> ${escapeHtml(item.origin)}</p>
+              <p><strong>Fun Fact:</strong> ${escapeHtml(item.funFact)}</p>
             </div>
           </div>
           <div class="card-footer">
-            <button class="add-btn" onclick='addToCart(${JSON.stringify(item)})'>🧺 Pettandi Basket lo</button>
+            <button class="add-btn" type="button" onclick="addToCartByIndex(${idx})">🧺 Pettandi Basket lo</button>
           </div>
         `;
         menuDiv.appendChild(card);
       });
     }
+
+    // Escape helper to avoid inadvertent HTML injection
+    function escapeHtml(text) {
+      if (text === undefined || text === null) return '';
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
     function filterItems() {
       const searchText = document.getElementById('searchInput').value.toLowerCase();
       const priceFilter = document.getElementById('priceFilter').value;
@@ -276,36 +302,64 @@
       });
       displayItems(filtered);
     }
-    function addToCart(item) {
+
+    // add to cart by index (reads from the items array)
+    function addToCartByIndex(index) {
+      const item = items[index];
+      if (!item) {
+        alert("Item not found.");
+        return;
+      }
+      // keep the same backend contract you had
       fetch('/add-to-cart', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(item)
-      }).then(res => res.json()).then(data => {
+      }).then(res => {
+        // try to parse JSON; handle non-JSON gracefully
+        return res.json().catch(() => ({ message: 'Added to basket (no JSON returned)' }));
+      }).then(data => {
         alert(data.message || "Item added to basket!");
-      }).catch(() => {
+      }).catch((err) => {
+        console.error("Add to cart failed:", err);
         alert("Failed to sync with backend.");
       });
     }
-    
+
+    // wire up filters
     document.getElementById('searchInput').addEventListener('input', filterItems);
     document.getElementById('priceFilter').addEventListener('change', filterItems);
-    fetch('/userdata')
-      .then(res => res.json())
-      .then(data => {
-        if (!data.name) {
-          alert("Please login first.");
-          window.location.href = "/";
-        } else {
-          document.getElementById('greeting').textContent = `Hello ${data.name}! 👋`;
-          document.getElementById('location').textContent = `Delivering to ${data.place} 📍`;
-        }
-      });
+
+    // userdata fetch - defensive handling and correct string interpolation
+    fetch('/userdata').then(res => {
+      if (!res.ok) throw new Error('Network response was not ok');
+      return res.json();
+    }).then(data => {
+      // If backend returns an object with name/place
+      if (!data || !data.name) {
+        alert("Please login first.");
+        // redirect to root (login)
+        window.location.href = "/";
+      } else {
+        document.getElementById('greeting').textContent = `Hello ${data.name}! 👋`;
+        const place = data.place ? data.place : 'your location';
+        document.getElementById('location').textContent = `Delivering to ${place} 📍`;
+      }
+    }).catch(err => {
+      console.warn("Could not fetch userdata:", err);
+      // Optional: keep guest view but don't redirect if backend down
+      document.getElementById('greeting').textContent = 'Hello Guest! 👋';
+      document.getElementById('location').textContent = 'Delivering to your location 📍';
+    });
+
+    // theme toggle
     document.getElementById('themeToggle').onclick = () => {
       document.body.classList.toggle('dark-mode');
       document.getElementById('themeToggle').innerHTML =
         document.body.classList.contains('dark-mode') ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
     };
+
+    // initial render
     displayItems(items);
   </script>
 </body>
