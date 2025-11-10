@@ -4,7 +4,7 @@ const session = require('express-session');
 const bodyParser = require('body-parser');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT||3000;
 
 // ✅ Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -98,5 +98,5 @@ app.post('/place-order', (req, res) => {
 
 // ✅ Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running on ${PORT}`);
 });
